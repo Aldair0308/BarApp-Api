@@ -25,7 +25,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
       password: process.env.DB_PASS || '',
       database: process.env.DB_NAME || 'Bar',
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
       charset: 'utf8mb4_unicode_ci',
       extra: { connectionLimit: 10 },
     }),
