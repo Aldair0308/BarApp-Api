@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { OrderItem } from '../orders/order-item.entity';
+import { OrderItemConfig } from '../orders/order-item-config.entity';
 import { Payment } from '../payments/payment.entity';
 import { PaymentItem } from '../payments/payment-item.entity';
 import { Mesa } from '../mesas/mesa.entity';
@@ -33,12 +34,37 @@ function periodRange(period?: string, startDate?: string, endDate?: string) {
 export class ReportsService {
   constructor(
     @InjectRepository(OrderItem) private readonly items: Repository<OrderItem>,
+    @InjectRepository(OrderItemConfig) private readonly itemConfigs: Repository<OrderItemConfig>,
     @InjectRepository(Payment) private readonly payments: Repository<Payment>,
     @InjectRepository(PaymentItem) private readonly paymentItems: Repository<PaymentItem>,
     @InjectRepository(Mesa) private readonly mesas: Repository<Mesa>,
     @InjectRepository(User) private readonly users: Repository<User>,
     private readonly print: PrintService,
   ) {}
+
+  private async getTopExtras(
+    start: Date,
+    end: Date,
+    limit = 10,
+  ): Promise<{ name: string; quantity: number; revenue: number }[]> {
+    const rows = await this.itemConfigs
+      .createQueryBuilder('c')
+      .innerJoin('order_items', 'i', 'i.id = c.order_item_id')
+      .select('c.option_name', 'name')
+      .addSelect('SUM(i.quantity)', 'quantity')
+      .addSelect('SUM(i.quantity * c.extra_price)', 'revenue')
+      .where('c.extra_price > 0')
+      .andWhere('i.added_at BETWEEN :start AND :end', { start, end })
+      .groupBy('c.option_name')
+      .orderBy('revenue', 'DESC')
+      .limit(limit)
+      .getRawMany<{ name: string; quantity: string; revenue: string }>();
+    return rows.map((r) => ({
+      name: r.name,
+      quantity: Number(r.quantity) || 0,
+      revenue: Number(r.revenue) || 0,
+    }));
+  }
 
   async sales(period?: string, startDate?: string, endDate?: string) {
     const { start, end } = periodRange(period, startDate, endDate);
@@ -99,6 +125,7 @@ export class ReportsService {
       avgTicket,
       avgTimeMin: 18,
       topProducts,
+      topExtras: await this.getTopExtras(start, end),
       salesByHour,
       salesByDay: [],
       paymentMethods: byMethod,
@@ -166,6 +193,11 @@ export class ReportsService {
       'Top Productos:',
       ...data.topProducts.map(
         (p: any) => `  - ${p.name}: ${p.quantity} unidades, $${p.revenue.toFixed(2)}`,
+      ),
+      '',
+      'Extras Más Vendidos:',
+      ...(data.topExtras || []).map(
+        (e: any) => `  - ${e.name}: ${e.quantity} unidades, $${e.revenue.toFixed(2)}`,
       ),
     ];
     return {
@@ -289,6 +321,12 @@ export class ReportsService {
       totalesCategoriaFormatted[cat] = `$${data.total.toFixed(2)}`;
     }
 
+    const topExtras = await this.getTopExtras(start, end);
+    const topExtrasMap: Record<string, { quantity: number; revenue: number }> = {};
+    for (const e of topExtras) {
+      topExtrasMap[e.name] = { quantity: e.quantity, revenue: e.revenue };
+    }
+
     const ticketData = {
       title: 'REPORTE DE VENTAS',
       periodo: 'rango',
@@ -303,6 +341,7 @@ export class ReportsService {
       totales_categoria: totalesCategoria,
       totales_categoria_formatted: totalesCategoriaFormatted,
       productos_mas_vendidos: Object.fromEntries(topProducts.map(p => [p.name, p.cantidad])),
+      top_extras: topExtrasMap,
       categorias,
       resumen_dias: [],
     };
