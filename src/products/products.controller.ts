@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -8,9 +9,14 @@ import {
   Post,
   Put,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
 import {
   IsArray,
   IsBoolean,
@@ -21,6 +27,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { v4 as uuid } from 'uuid';
 import { ProductsService } from './products.service';
 import { ProductCategory, ProductDestination } from './product.entity';
 import { Roles, RolesGuard } from '../auth/roles.guard';
@@ -142,6 +149,33 @@ export class ProductsController {
   @Patch(':id/toggle-available')
   toggle(@Param('id') id: string) {
     return this.products.toggleAvailable(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(__dirname, '..', '..', 'uploads', 'products'),
+        filename: (_req, file, cb) => {
+          const ext = extname(file.originalname);
+          cb(null, `${uuid()}${ext}`);
+        },
+      }),
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!file.mimetype.startsWith('image/')) {
+          cb(new BadRequestException('Solo se permiten imágenes'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('Archivo no recibido');
+    return { url: `/uploads/products/${file.filename}` };
   }
 
   @Get(':id/configurations')
