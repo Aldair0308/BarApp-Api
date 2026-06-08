@@ -41,6 +41,7 @@ class CreateProductDto {
   @IsOptional() @IsIn(['cocina', 'barra', 'otros']) destination?: ProductDestination;
   @IsOptional() available?: boolean;
   @IsOptional() @IsString() image?: string;
+  @IsOptional() @IsNumber() sortOrder?: number;
 }
 
 class UpdateProductDto {
@@ -52,6 +53,7 @@ class UpdateProductDto {
   @IsOptional() @IsIn(['cocina', 'barra', 'otros']) destination?: ProductDestination;
   @IsOptional() available?: boolean;
   @IsOptional() @IsString() image?: string;
+  @IsOptional() @IsNumber() sortOrder?: number;
 }
 
 class OptionDto {
@@ -103,6 +105,16 @@ class UpdateOptionDto {
   @IsOptional() @IsNumber() sortOrder?: number;
 }
 
+class ReorderItemDto {
+  @IsString() id: string;
+  @IsNumber() sortOrder: number;
+}
+
+class ReorderDto {
+  @IsArray() @ValidateNested({ each: true }) @Type(() => ReorderItemDto)
+  items: ReorderItemDto[];
+}
+
 @UseGuards(AuthGuard('jwt'))
 @Controller('products')
 export class ProductsController {
@@ -149,6 +161,13 @@ export class ProductsController {
   @Patch(':id/toggle-available')
   toggle(@Param('id') id: string) {
     return this.products.toggleAvailable(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Patch('reorder')
+  reorder(@Body() dto: ReorderDto) {
+    return this.products.reorder(dto.items);
   }
 
   @UseGuards(RolesGuard)

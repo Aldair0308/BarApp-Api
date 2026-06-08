@@ -42,6 +42,9 @@ export class Product {
   @Column({ type: 'tinyint', default: 1 })
   available: number;
 
+  @Column({ name: 'sort_order', type: 'int', default: 0 })
+  sortOrder: number;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   image: string;
 

@@ -26,7 +26,8 @@ export class ProductsService {
       .createQueryBuilder('p')
       .leftJoinAndSelect('p.configurations', 'g')
       .leftJoinAndSelect('g.options', 'o')
-      .orderBy('p.name', 'ASC')
+      .orderBy('p.sort_order', 'ASC')
+      .addOrderBy('p.name', 'ASC')
       .addOrderBy('g.sort_order', 'ASC')
       .addOrderBy('o.sort_order', 'ASC');
     if (filters.category) qb.andWhere('p.category = :c', { c: filters.category });
@@ -62,6 +63,7 @@ export class ProductsService {
     destination?: ProductDestination;
     available?: boolean;
     image?: string;
+    sortOrder?: number;
   }) {
     const p = this.products.create({
       id: uuid(),
@@ -72,6 +74,7 @@ export class ProductsService {
       destination: data.destination || 'cocina',
       available: data.available === false ? 0 : 1,
       image: data.image || null,
+      sortOrder: data.sortOrder ?? 0,
     });
     return this.products.save(p);
   }
@@ -86,6 +89,7 @@ export class ProductsService {
       destination?: ProductDestination;
       available?: boolean;
       image?: string;
+      sortOrder?: number;
     },
   ) {
     const p = await this.findOne(id);
@@ -96,6 +100,7 @@ export class ProductsService {
     if (data.destination !== undefined) p.destination = data.destination;
     if (data.available !== undefined) p.available = data.available ? 1 : 0;
     if (data.image !== undefined) p.image = data.image;
+    if (data.sortOrder !== undefined) p.sortOrder = data.sortOrder;
     return this.products.save(p);
   }
 
@@ -182,7 +187,7 @@ export class ProductsService {
       name: data.name,
       required: data.required ? 1 : 0,
       type: data.type,
-      sortOrder: 0,
+      sortOrder: await this.getNextGroupSortOrder(productId),
     });
     return this.groups.save(g);
   }
@@ -221,7 +226,7 @@ export class ProductsService {
       name: data.name,
       extraPrice: data.extraPrice || 0,
       isDefault: data.isDefault ? 1 : 0,
-      sortOrder: 0,
+      sortOrder: await this.getNextOptionSortOrder(groupId),
     });
     return this.options.save(o);
   }
@@ -250,5 +255,30 @@ export class ProductsService {
     if (!o) throw new NotFoundException('Opción no encontrada');
     await this.options.remove(o);
     return { id: optionId, deleted: true };
+  }
+
+  async reorder(items: { id: string; sortOrder: number }[]) {
+    for (const item of items) {
+      await this.products.update(item.id, { sortOrder: item.sortOrder });
+    }
+    return { success: true };
+  }
+
+  private async getNextGroupSortOrder(productId: string): Promise<number> {
+    const max = await this.groups
+      .createQueryBuilder('g')
+      .select('MAX(g.sort_order)', 'max')
+      .where('g.product_id = :pid', { pid: productId })
+      .getRawOne();
+    return (max?.max ?? -1) + 1;
+  }
+
+  private async getNextOptionSortOrder(groupId: string): Promise<number> {
+    const max = await this.options
+      .createQueryBuilder('o')
+      .select('MAX(o.sort_order)', 'max')
+      .where('o.group_id = :gid', { gid: groupId })
+      .getRawOne();
+    return (max?.max ?? -1) + 1;
   }
 }
