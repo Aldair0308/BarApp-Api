@@ -9,6 +9,11 @@ import { ReportsService } from './reports.service';
 export class ReportsController {
   constructor(private readonly reports: ReportsService) {}
 
+  @Get('diag')
+  diag() {
+    return this.reports.timezoneDiag();
+  }
+
   @Get('sales')
   sales(
     @Query('period') period?: string,

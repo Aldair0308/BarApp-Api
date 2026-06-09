@@ -151,8 +151,22 @@ export class ProductsController {
 
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @Post(':id/update')
+  updatePost(@Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.products.update(id, dto);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @Delete(':id')
   remove(@Param('id') id: string) {
+    return this.products.remove(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post(':id/remove')
+  removePost(@Param('id') id: string) {
     return this.products.remove(id);
   }
 
@@ -165,8 +179,22 @@ export class ProductsController {
 
   @UseGuards(RolesGuard)
   @Roles('admin')
+  @Post(':id/toggle-available')
+  togglePost(@Param('id') id: string) {
+    return this.products.toggleAvailable(id);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
   @Patch('reorder')
   reorder(@Body() dto: ReorderDto) {
+    return this.products.reorder(dto.items);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post('reorder')
+  reorderPost(@Body() dto: ReorderDto) {
     return this.products.reorder(dto.items);
   }
 
@@ -206,6 +234,16 @@ export class ProductsController {
   @Roles('admin')
   @Put(':id/configurations')
   replaceConfigs(
+    @Param('id') id: string,
+    @Body() dto: ReplaceConfigurationsDto,
+  ) {
+    return this.products.replaceConfigurations(id, dto.configurations);
+  }
+
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @Post(':id/configurations/replace')
+  replaceConfigsPost(
     @Param('id') id: string,
     @Body() dto: ReplaceConfigurationsDto,
   ) {

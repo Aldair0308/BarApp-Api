@@ -42,6 +42,23 @@ export class ReportsService {
     private readonly print: PrintService,
   ) {}
 
+  async timezoneDiag() {
+    const rows = await this.payments.query(`
+      SELECT
+        @@system_time_zone AS system_tz,
+        @@global.time_zone AS global_tz,
+        @@session.time_zone AS session_tz,
+        NOW() AS mysql_now,
+        UTC_TIMESTAMP() AS mysql_utc
+    `);
+    return {
+      ...rows[0],
+      serverNow: new Date().toISOString(),
+      serverTz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'unknown',
+      serverOffset: new Date().getTimezoneOffset(),
+    };
+  }
+
   private async getTopExtras(
     start: Date,
     end: Date,
