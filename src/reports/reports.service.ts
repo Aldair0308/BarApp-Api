@@ -11,23 +11,52 @@ import { PrintService } from '../print/print.service';
 
 function periodRange(period?: string, startDate?: string, endDate?: string) {
   const now = new Date();
-  let start = new Date();
-  let end = new Date();
+  const mxParts = new Intl.DateTimeFormat('en', {
+    timeZone: 'America/Mexico_City',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  }).formatToParts(now);
+  const p = (t: string) => parseInt(mxParts.find(x => x.type === t)!.value, 10);
+  const mxYear = p('year'), mxMonth = p('month'), mxDay = p('day');
+  const mxHour = p('hour'), mxMin = p('minute'), mxSec = p('second');
+  const mxEpoch = Date.UTC(mxYear, mxMonth - 1, mxDay, mxHour, mxMin, mxSec);
+  const offsetMs = Date.now() - mxEpoch;
+
+  const toUtc = (y: number, m: number, d: number, h = 0, min = 0, s = 0, ms = 0) =>
+    new Date(Date.UTC(y, m - 1, d, h, min, s, ms) + offsetMs);
+
+  const todayStart = () => toUtc(mxYear, mxMonth, mxDay);
+  const todayEnd = () => toUtc(mxYear, mxMonth, mxDay, 23, 59, 59, 999);
+  const dayStart = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return toUtc(y, m, d);
+  };
+  const dayEnd = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return toUtc(y, m, d, 23, 59, 59, 999);
+  };
+
   if (period === 'semana') {
-    start = new Date(now);
-    start.setDate(now.getDate() - 7);
-  } else if (period === 'mes') {
-    start = new Date(now);
-    start.setMonth(now.getMonth() - 1);
-  } else if (startDate && endDate) {
-    start = new Date(startDate);
-    end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-  } else {
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
+    const d = new Date(Date.UTC(mxYear, mxMonth - 1, mxDay));
+    const weekAgo = new Date(d.getTime() - 6 * 86400000);
+    return {
+      start: new Date(weekAgo.getTime() + offsetMs),
+      end: todayEnd(),
+    };
   }
-  return { start, end };
+  if (period === 'mes') {
+    const d = new Date(Date.UTC(mxYear, mxMonth - 1, mxDay));
+    const monthAgo = new Date(d.getTime() - 29 * 86400000);
+    return {
+      start: new Date(monthAgo.getTime() + offsetMs),
+      end: todayEnd(),
+    };
+  }
+  if (startDate && endDate) {
+    return { start: dayStart(startDate), end: dayEnd(endDate) };
+  }
+  return { start: todayStart(), end: todayEnd() };
 }
 
 @Injectable()
@@ -256,10 +285,7 @@ export class ReportsService {
   }
 
   async generateReportTicket(startDate: string, endDate: string) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
+    const { start, end } = periodRange(undefined, startDate, endDate);
 
     const periodLabel = `del ${startDate} al ${endDate}`;
 
