@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Headers,
   Param,
   Patch,
   Post,
@@ -54,17 +55,27 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Post()
-  add(
+  async add(
     @Param('mesaId') mesaId: string,
     @Body() dto: AddItemsDto,
     @Req() req: any,
+    @Headers('Idempotency-Key') idempotencyKey?: string,
   ) {
-    return this.orders.addItems(
+    if (idempotencyKey) {
+      const keyHash = this.orders.hashIdempotencyKey(idempotencyKey);
+      const cached = await this.orders.findCachedResponse(keyHash);
+      if (cached) return cached;
+    }
+
+    const result = await this.orders.addItems(
       mesaId,
       req.user.userId,
       req.user.name,
       dto.items,
+      idempotencyKey ? this.orders.hashIdempotencyKey(idempotencyKey) : undefined,
     );
+
+    return result;
   }
 
   @Patch(':itemId/status')

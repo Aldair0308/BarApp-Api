@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { Inventory } from './inventory.entity';
 import { InventoryMovement, MovementType } from './inventory-movement.entity';
@@ -108,16 +108,18 @@ export class InventoryService {
     });
   }
 
-  async consumeStock(productId: string, quantity: number, referenceId: string, userId?: string) {
-    const i = await this.inv.findOne({ where: { productId } });
+  async consumeStock(productId: string, quantity: number, referenceId: string, userId?: string, entityManager?: EntityManager) {
+    const invRepo = entityManager ? entityManager.getRepository(Inventory) : this.inv;
+    const movesRepo = entityManager ? entityManager.getRepository(InventoryMovement) : this.moves;
+    const i = await invRepo.findOne({ where: { productId } });
     if (!i) return;
     if (i.currentStock < quantity) {
       throw new Error(`Stock insuficiente para ${i.productName}`);
     }
     i.currentStock -= quantity;
-    await this.inv.save(i);
-    await this.moves.save(
-      this.moves.create({
+    await invRepo.save(i);
+    await movesRepo.save(
+      movesRepo.create({
         id: uuid(),
         inventoryId: i.id,
         type: 'sale' as MovementType,
