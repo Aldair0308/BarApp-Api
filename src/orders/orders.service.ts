@@ -184,6 +184,19 @@ export class OrdersService implements OnModuleInit {
         created.push(orderItem);
       }
 
+      if (idempotencyKeyHash) {
+        await qr.query(
+          `INSERT INTO idempotency_keys (id, key_hash, response_json, expires_at, created_at)
+           VALUES (?, ?, ?, ?, NOW())`,
+          [
+            uuid(),
+            idempotencyKeyHash,
+            JSON.stringify(created),
+            new Date(Date.now() + 24 * 60 * 60 * 1000),
+          ],
+        );
+      }
+
       await qr.commitTransaction();
 
       this.webhooks.dispatch('order.created', {
@@ -257,14 +270,10 @@ export class OrdersService implements OnModuleInit {
       const kitchenItems = itemPayloads.filter((i) => i.destination === 'cocina');
       const barItems = itemPayloads.filter((i) => i.destination === 'barra');
       if (kitchenItems.length) {
-        await this.print.create({
+        this.print.create({
           type: 'kitchen_order',
           data: { order: { ...orderBase, items: kitchenItems } },
-        });
-      }
-
-      if (idempotencyKeyHash) {
-        await this.saveIdempotencyKey(idempotencyKeyHash, created);
+        }).catch(() => {});
       }
 
       return created;
