@@ -114,21 +114,6 @@ export class MesasService {
       totalAmount: total.total,
       items: itemsPayload,
     });
-    await this.print.create({
-      type: 'mesa_ticket',
-      data: {
-        mesa: {
-          mesaId: m.id,
-          tableNumber: m.tableNumber,
-          clientName: m.clientName,
-          waiterName: m.waiterName,
-          createdAt: m.createdAt,
-          closedAt: m.closedAt,
-          totalAmount: total.total,
-          items: itemsPayload,
-        },
-      },
-    });
     return this.findOne(id);
   }
 
