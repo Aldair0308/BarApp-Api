@@ -1,6 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
 import { OrderItem } from './order-item.entity';
 import { OrderItemConfig } from './order-item-config.entity';
 import { IdempotencyKey } from './idempotency-key.entity';
@@ -20,7 +19,7 @@ import { PrintModule } from '../print/print.module';
     PrintModule,
   ],
   controllers: [OrdersController],
-  providers: [OrdersService, DataSource],
+  providers: [OrdersService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
