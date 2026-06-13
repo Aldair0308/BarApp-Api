@@ -156,33 +156,36 @@ export class PaymentsService {
       }),
     });
 
-    await this.print.create({
-      type: 'payment_receipt',
-      data: {
-        payment: {
-          paymentId: payment.id,
-          clientName: mesa.clientName,
-          tableNumber: mesa.tableNumber,
-          waiterName: mesa.waiterName,
-          paidAt: payment.paidAt,
-          paymentMethod: data.paymentMethod,
-          amount,
-          remaining,
-          isFullPayment: allPaid,
-          items: data.items.map((it) => {
-            const oi = itemsById[it.orderItemId];
-            return {
-              orderItemId: it.orderItemId,
-              productName: oi.productName,
-              paidQty: it.paidQty,
-              basePrice: Number(oi.basePrice),
-              totalPrice: Number(oi.totalPrice),
-              configDetails: configDetailsMap.get(it.orderItemId) || [],
-            };
-          }),
+    // TODO: Temporal — solo imprimir comprobante en pagos parciales, no en cuenta total
+    if (!allPaid) {
+      await this.print.create({
+        type: 'payment_receipt',
+        data: {
+          payment: {
+            paymentId: payment.id,
+            clientName: mesa.clientName,
+            tableNumber: mesa.tableNumber,
+            waiterName: mesa.waiterName,
+            paidAt: payment.paidAt,
+            paymentMethod: data.paymentMethod,
+            amount,
+            remaining,
+            isFullPayment: allPaid,
+            items: data.items.map((it) => {
+              const oi = itemsById[it.orderItemId];
+              return {
+                orderItemId: it.orderItemId,
+                productName: oi.productName,
+                paidQty: it.paidQty,
+                basePrice: Number(oi.basePrice),
+                totalPrice: Number(oi.totalPrice),
+                configDetails: configDetailsMap.get(it.orderItemId) || [],
+              };
+            }),
+          },
         },
-      },
-    });
+      });
+    }
 
     return {
       ...payment,
