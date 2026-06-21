@@ -257,7 +257,7 @@ export class ReportsService {
     Cervezas: [
       'XX Laguer Chica', 'XX Laguer Grande', 'XX Ambar Chica', 'XX Ambar Grande',
       'XX Lager Lata', 'Corona', 'Corona Premier', 'Negra Modelo',
-      'Modelo Especial', 'Victoria', 'Clamato Extra',
+      'Modelo Especial', 'Victoria', 'Clamato Extra', 'Caguama XX Ambar',
     ],
     Aldair: [
       'Palomitas', 'Heineken Cero alcohol', 'Squirt', 'Pepsi', '7Up', 'Agua',
@@ -267,11 +267,11 @@ export class ReportsService {
       'Nuggets', 'Boneless', 'Alitas', 'Deditos de queso', 'Hot dogs',
     ],
     Javier: [
-      'Caribe de fresa', 'Caribe de durazno', 'Bohemia Vienna', 'Bohemia Pilsner',
+      'Caribe', 'Caribe de fresa', 'Caribe de durazno', 'Bohemia Vienna', 'Bohemia Pilsner',
       'Bohemia Cristal', 'Super de fruta', 'Licuado', 'Peñafiel', 'Sangría',
     ],
     Ana: [
-      'Marlboro rojo', 'Marlboro de capsula', 'Botana', 'Chicles', 'Chocolate',
+      'Marlboro rojo', 'Marlboro de capsula', 'Marlboro sandia', 'Botana', 'Chicles', 'Chocolate',
     ],
   };
 
