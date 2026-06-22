@@ -267,7 +267,7 @@ export class ReportsService {
       'Nuggets', 'Boneless', 'Alitas', 'Deditos de queso', 'Hot dogs',
     ],
     Javier: [
-      'Caribe', 'Caribe de fresa', 'Caribe de durazno', 'Bohemia Vienna', 'Bohemia Pilsner',
+      'Caribe', 'Caribe de fresa', 'Caribe de durazno', 'Bohemia', 'Bohemia Vienna', 'Bohemia Pilsner',
       'Bohemia Cristal', 'Super de fruta', 'Licuado', 'Peñafiel', 'Sangría',
     ],
     Ana: [
